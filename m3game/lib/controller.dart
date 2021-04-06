@@ -49,10 +49,11 @@ class Controller extends BaseGame with MultiTouchDragDetector {
   @override
   void onDragEnd(int pointerId, DragEndDetails details) {
     if (_currrentPointerId == pointerId) {
-      board.onDragUpdate(lastPosition.dx, lastPosition.dy);
+      board.onDragEnd(lastPosition.dx, lastPosition.dy);
+      _currrentPointerId = null;
+      lastPosition = null;
     }
-    _currrentPointerId = null;
-    lastPosition = null;
+
     super.onDragEnd(pointerId, details);
   }
 }

@@ -12,31 +12,33 @@ enum Type { a, b, c, d }
 math.Random random = math.Random();
 
 class Gem extends PositionComponent {
+  double _halfSize;
+  double _hitboxSize;
+  double _hitboxHalfSize;
+  double _hitboxShift;
+
   final Type type;
   final Board board;
+
   Paint paint;
   double radius;
   int column;
   int row;
+  bool active;
 
   Gem(this.board, this.type, this.column, this.row)
       : super(size: Vector2(board.gemSize, board.gemSize)) {
     paint = getPaint(type);
-    radius = board.gemSize * 0.5 * 0.75;
-    position.setValues(
-      column * board.gemSize * 0.5,
-      row * board.gemSize * 0.5,
-    );
+    _halfSize = board.gemSize * 0.5;
+    _hitboxSize = board.gemSize * 0.75;
+    _hitboxHalfSize = _hitboxSize * 0.5;
+    _hitboxShift = (board.gemSize - _hitboxSize) * 0.5;
+    radius = _halfSize * 0.75;
+    active = false;
+    position.setValues(column * _halfSize, row * _halfSize);
   }
 
   static Type get randomType => Type.values.elementAt(random.nextInt(Type.values.length));
-
-  @override
-  void render(Canvas c) {
-    super.render(c);
-    final Offset offset = (position + size / 2).toOffset();
-    c.drawCircle(offset, radius, paint);
-  }
 
   static Paint getPaint(Type type) {
     switch (type) {
@@ -53,6 +55,56 @@ class Gem extends PositionComponent {
     }
   }
 
+  bool isNeighbour(Gem gem) {
+    assert(gem != null);
+    if (gem != null) {
+      final int c = (gem.column - column).abs();
+      final int r = (gem.row - row).abs();
+      return (c == 0 || c == 1) && (r == 0 || r == 1);
+    }
+    return false;
+  }
+
+  bool isInside(double x, double y) {
+    final double dx = x - this.x;
+    final double dy = y - this.y;
+
+    log('[$x,$y]  ->  [$dx,$dy]');
+
+    // return dy > dx + _hitboxHalfSize &&
+    //     dy < dx - _hitboxHalfSize &&
+    //     dy > -dx - _hitboxHalfSize &&
+    //     dy < -dx + _hitboxHalfSize;
+    return dy > dx + _hitboxHalfSize; // &&
+    // dy < dx - _hitboxHalfSize &&
+    // dy > -dx - _hitboxHalfSize &&
+    // dy < -dx + _hitboxHalfSize;
+  }
+
   @override
-  String toString() => position.toString();
+  void render(Canvas c) {
+    super.render(c);
+    final Offset offset = (position + size / 2).toOffset();
+    if (active) {
+      c.drawCircle(offset, radius * 1.25, Paints.black);
+    }
+    c.drawCircle(offset, radius, paint);
+    renderHitBox(c);
+  }
+
+  void renderHitBox(Canvas c) {
+    final double x1 = x + _hitboxShift + _hitboxHalfSize;
+    final double x2 = x + _hitboxShift + _hitboxSize;
+    final double x3 = x + _hitboxShift;
+    final double y1 = y + _hitboxShift;
+    final double y2 = y + _hitboxShift + _hitboxHalfSize;
+    final double y3 = y + _hitboxShift + _hitboxSize;
+    c.drawLine(Offset(x1, y1), Offset(x2, y2), Paints.black);
+    c.drawLine(Offset(x2, y2), Offset(x1, y3), Paints.black);
+    c.drawLine(Offset(x1, y3), Offset(x3, y2), Paints.black);
+    c.drawLine(Offset(x3, y2), Offset(x1, y1), Paints.black);
+  }
+
+  @override
+  String toString() => type.toString();
 }
