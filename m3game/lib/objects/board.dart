@@ -21,6 +21,7 @@ class Board extends PositionComponent {
     position.setValues(x, y);
     _gems = List.generate(columns, (_) => List(rows), growable: false);
     _selectedGems = [];
+    log('board: $size  ->  $position');
   }
 
   Future<void> onLoad() async {
@@ -88,8 +89,9 @@ class Board extends PositionComponent {
       _currentColumn = getColumn(dx);
       _currentRow = getRow(dy);
       final Gem gem = get(_currentColumn, _currentRow);
-      log(gem.isInside(dx, dy).toString());
-      select(gem);
+      if (gem.isInside(dx, dy)) {
+        select(gem);
+      }
     }
   }
 
@@ -99,10 +101,14 @@ class Board extends PositionComponent {
     if (inside(dx, dy)) {
       final int newColumn = getColumn(dx);
       final int newRow = getRow(dy);
-      if (_currentColumn != newColumn || _currentRow != newRow) {
-        select(get(newColumn, newRow));
-        _currentColumn = newColumn;
-        _currentRow = newRow;
+      final Gem gem = get(newColumn, newRow);
+      if (gem.isInside(dx, dy)) {
+        if (_currentColumn != newColumn || _currentRow != newRow) {
+          if (select(gem)) {
+            _currentColumn = newColumn;
+            _currentRow = newRow;
+          }
+        }
       }
     }
   }
@@ -110,6 +116,8 @@ class Board extends PositionComponent {
   void onDragEnd(double x, double y) {
     _selectedGems.forEach((Gem gem) => gem.active = false);
     _selectedGems.clear();
+    _currentColumn = -1;
+    _currentRow = -1;
   }
 
   @override

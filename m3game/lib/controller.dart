@@ -12,10 +12,11 @@ class Controller extends BaseGame with MultiTouchDragDetector {
 
   @override
   Future<void> onLoad() async {
-    log('screen size $size');
-    const int columns = 6;
+    const int columns = 8;
     const int rows = 6;
     gemSize = size.x / (columns + 1);
+
+    log('controller $size  [$columns,$rows]  $gemSize');
     board = Board(
       0 + (size.x - columns * gemSize) * 0.5,
       0 + (size.y - rows * gemSize) * 0.5,
