@@ -7,43 +7,47 @@ import 'package:m3game/utils/colors.dart';
 
 import 'dart:math' as math;
 
-const bool kData = false;
-const bool khitbox = false;
+const bool kData = true;
+const bool khitbox = true;
 
-enum Type { a, b, c, d }
-math.Random random = math.Random();
+enum Type { a, b, c, d, e }
+math.Random rng = math.Random();
 
 class Gem extends PositionComponent {
   double _halfSize;
   double _hitboxSize;
   double _hitboxHalfSize;
   double _hitboxShift;
+  double _radius;
+  Paint _paint;
+  bool _active;
 
   final Type type;
   final Board board;
 
-  Paint paint;
-  double radius;
   int column;
   int row;
-  bool active;
 
   Gem(this.board, this.type, this.column, this.row)
       : super(
           size: Vector2(board.gemSize, board.gemSize),
           position: Vector2(column * board.gemSize, row * board.gemSize),
         ) {
-    paint = getPaint(type);
+    _paint = getPaint(type);
     _halfSize = board.gemSize * 0.5;
-    radius = _halfSize * 0.75;
+    _radius = _halfSize * 0.75;
     _hitboxSize = board.gemSize * 0.75;
     _hitboxHalfSize = _hitboxSize * 0.5;
     _hitboxShift = (board.gemSize - _hitboxSize) * 0.5;
-    active = false;
-    log('gem: [$column,$row]  ->  $position');
+    _active = false;
   }
 
-  static Type get randomType => Type.values.elementAt(random.nextInt(Type.values.length));
+  static Gem random(Board board) {
+    assert(board != null);
+    return Gem(board, randomType, 0, 0);
+  }
+
+  static Type get randomType => Type.values.elementAt(rng.nextInt(Type.values.length));
 
   static Paint getPaint(Type type) {
     switch (type) {
@@ -55,10 +59,14 @@ class Gem extends PositionComponent {
         return Paints.green;
       case Type.d:
         return Paints.magenta;
+      case Type.e:
+        return Paints.cyan;
       default:
         return Paints.white;
     }
   }
+
+  void set(int column, int row) => position.setValues(column * board.gemSize, row * board.gemSize);
 
   bool isNeighbour(Gem gem) {
     assert(gem != null);
@@ -80,6 +88,18 @@ class Gem extends PositionComponent {
     return dt1 && dt2 && dt3 && dt4;
   }
 
+  void select() {
+    if (!_active) {
+      _active = true;
+    }
+  }
+
+  void unselect() {
+    if (_active) {
+      _active = false;
+    }
+  }
+
   @override
   void render(Canvas c) {
     super.render(c);
@@ -89,26 +109,12 @@ class Gem extends PositionComponent {
     c.drawLine(Offset(width, height), Offset(0, height), Paints.black);
     c.drawLine(Offset(0, height), Offset(0, 0), Paints.black);
     final Offset offset = (size / 2).toOffset();
-    if (active) {
-      c.drawCircle(offset, radius * 1.1, Paints.black);
+    if (_active) {
+      c.drawCircle(offset, _radius * 1.1, Paints.black);
     }
-    c.drawCircle(offset, radius, paint);
+    c.drawCircle(offset, _radius, _paint);
     if (kData) {
-      renderText(c, '$x,$y');
-      renderText(c, '${x + width},$y', offset: Offset(width, 0), textWidthRatio: 1);
-      renderText(
-        c,
-        '${x + width},${y + height}',
-        offset: Offset(width, height),
-        textWidthRatio: 1,
-        textHeightRatio: 1,
-      );
-      renderText(
-        c,
-        '$x,${y + height}',
-        offset: Offset(0, height),
-        textHeightRatio: 1,
-      );
+      renderData(c);
     }
     if (khitbox) {
       renderHitBox(c);
@@ -153,6 +159,40 @@ class Gem extends PositionComponent {
     c.drawLine(Offset(x2, y3), Offset(x1, y1), Paints.black);
   }
 
+  void renderData(Canvas c) {
+    final int x = this.x.toInt();
+    final int y = this.y.toInt();
+    // final int width = this.width.toInt();
+    // final int height = this.height.toInt();
+    renderText(c, '$x,$y');
+    renderText(
+      c,
+      '$column,$row',
+      offset: Offset(width / 2, height / 2),
+      textHeightRatio: 0.5,
+      textWidthRatio: 0.5,
+    );
+    // renderText(
+    //   c,
+    //   '${x + width},$y',
+    //   offset: Offset(this.width, 0),
+    //   textWidthRatio: 1,
+    // );
+    // renderText(
+    //   c,
+    //   '${x + width},${y + height}',
+    //   offset: Offset(this.width, this.height),
+    //   textWidthRatio: 1,
+    //   textHeightRatio: 1,
+    // );
+    // renderText(
+    //   c,
+    //   '$x,${y + height}',
+    //   offset: Offset(0, this.height),
+    //   textHeightRatio: 1,
+    // );
+  }
+
   @override
-  String toString() => type.toString();
+  String toString() => '${type.toString().split('.').last}[$column,$row]';
 }

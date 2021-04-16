@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flame/game.dart';
 import 'package:flame/gestures.dart';
 import 'package:flutter/material.dart';
@@ -9,14 +7,14 @@ class Controller extends BaseGame with MultiTouchDragDetector {
   bool running = true;
   double gemSize = 0;
   Board board;
+  int _currrentPointerId;
+  Offset lastPosition;
 
   @override
   Future<void> onLoad() async {
-    const int columns = 8;
-    const int rows = 6;
+    const int columns = 4;
+    const int rows = 3;
     gemSize = size.x / (columns + 1);
-
-    log('controller $size  [$columns,$rows]  $gemSize');
     board = Board(
       0 + (size.x - columns * gemSize) * 0.5,
       0 + (size.y - rows * gemSize) * 0.5,
@@ -26,9 +24,6 @@ class Controller extends BaseGame with MultiTouchDragDetector {
     );
     add(board);
   }
-
-  int _currrentPointerId;
-  Offset lastPosition;
 
   @override
   void onDragStart(int pointerId, Vector2 startPosition) {
