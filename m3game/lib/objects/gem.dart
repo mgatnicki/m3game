@@ -7,6 +7,8 @@ import 'package:m3game/utils/colors.dart';
 
 import 'dart:math' as math;
 
+import 'package:m3game/utils/render_text.dart';
+
 const bool kData = true;
 const bool khitbox = true;
 
@@ -27,6 +29,8 @@ class Gem extends PositionComponent {
 
   int column;
   int row;
+
+  bool get isSelected => _active;
 
   Gem(this.board, this.type, this.column, this.row)
       : super(
@@ -121,31 +125,6 @@ class Gem extends PositionComponent {
     }
   }
 
-  void renderText(
-    Canvas c,
-    String text, {
-    Offset offset = Offset.zero,
-    double textWidthRatio = 0.0,
-    double textHeightRatio = 0.0,
-  }) {
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          fontSize: 12,
-          color: Colors.black,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      c,
-      offset - Offset(textWidthRatio * textPainter.width, textHeightRatio * textPainter.height),
-    );
-  }
-
   void renderHitBox(Canvas c) {
     final double x1 = _hitboxShift;
     final double x2 = _hitboxShift + _hitboxHalfSize;
@@ -192,6 +171,14 @@ class Gem extends PositionComponent {
     //   textHeightRatio: 1,
     // );
   }
+
+  @override
+  bool operator ==(other) {
+    return type == other.type && column == other.column && row == other.row;
+  }
+
+  @override
+  int get hashCode => super.hashCode;
 
   @override
   String toString() => '${type.toString().split('.').last}[$column,$row]';

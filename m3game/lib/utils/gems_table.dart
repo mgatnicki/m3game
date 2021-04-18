@@ -1,6 +1,5 @@
-import 'dart:developer';
-
 import 'package:m3game/objects/gem.dart';
+import 'package:m3game/utils/gem_stack.dart';
 
 class GemsTable {
   List<Gem> _gems;
@@ -16,6 +15,8 @@ class GemsTable {
       _gems.add(null);
     }
   }
+
+  Gem get(int column, int row) => _gems[column + columns * row];
 
   void _insert(Gem gem) => _gems[gem.column + columns * gem.row] = gem;
 
@@ -38,6 +39,17 @@ class GemsTable {
     }
   }
 
+  void remove(Gem gem) {
+    assert(gem != null);
+    if (gem != null) {
+      final int index = _gems.indexOf(gem);
+      assert(index != -1);
+      if (index != -1) {
+        _gems.insert(index, null);
+      }
+    }
+  }
+
   void forEach(void f(Gem element)) {
     for (Gem gem in _gems) {
       if (gem != null) {
@@ -46,7 +58,19 @@ class GemsTable {
     }
   }
 
-  Gem get(int column, int row) => _gems[column + columns * row];
+  // void collect(GemStack gems) {
+  //   assert(gems != null);
+  //   if (gems != null) {
+  //     final Iterator<Gem> it = gems.iterator;
+  //     while (it.moveNext()) {
+  //       it.current.unselect();
+  //       assert(_gems.contains(it.current));
+  //       if (_gems.contains(it.current)) {
+  //         _gems.remove(it.current);
+  //       }
+  //     }
+  //   }
+  // }
 
   @override
   String toString() {

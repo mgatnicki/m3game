@@ -1,18 +1,19 @@
 import 'dart:developer';
 import 'dart:ui';
 import 'package:flame/components.dart';
+import 'package:flutter/material.dart';
 import 'package:m3game/objects/gem.dart';
 import 'package:m3game/utils/colors.dart';
 import 'package:m3game/utils/gem_stack.dart';
 import 'package:m3game/utils/gems_table.dart';
+import 'package:m3game/utils/render_text.dart';
 
 import 'dart:math' as math;
 
 class Board extends PositionComponent {
   GemsTable _table;
-  int _currentColumn;
-  int _currentRow;
-  GemStack _selectedGems;
+  GemStack _selected;
+  Gem _current;
 
   final int columns;
   final int rows;
@@ -21,36 +22,16 @@ class Board extends PositionComponent {
   Board(double x, double y, this.columns, this.rows, this.gemSize)
       : super(size: Vector2(columns * gemSize, rows * gemSize)) {
     position.setValues(x, y);
-    _selectedGems = GemStack();
+    _selected = GemStack();
     _table = GemsTable(columns, rows);
-
     final List<Type> types = <Type>[Type.a, Type.b, Type.c, Type.d, Type.e];
-    // final List<Gem> gems = [];
-    // for (int i = 0; i < columns; i++) {
-    //   for (int j = 0; j < rows; j++) {
-    //     gems.add(Gem(this, types[j], i, j));
-    //   }
-    // }
-    final List<Gem> gems = <Gem>[
-      // 0
-      Gem(this, types[0], 0, 0),
-      Gem(this, types[0], 0, 1),
-      Gem(this, types[0], 0, 2),
-      // 1
-      Gem(this, types[1], 1, 0),
-      Gem(this, types[1], 1, 1),
-      Gem(this, types[1], 1, 2),
-      // 2
-      Gem(this, types[2], 2, 0),
-      Gem(this, types[2], 2, 1),
-      Gem(this, types[2], 2, 2),
-      // 3
-      Gem(this, types[3], 3, 0),
-      Gem(this, types[3], 3, 1),
-      Gem(this, types[3], 3, 2),
-    ];
+    final List<Gem> gems = [];
+    for (int i = 0; i < columns; i++) {
+      for (int j = 0; j < rows; j++) {
+        gems.add(Gem(this, types[j], i, j));
+      }
+    }
     _table.addMany(gems);
-    log('$_table');
   }
 
   Future<void> onLoad() async {
@@ -61,52 +42,23 @@ class Board extends PositionComponent {
   int getColumn(double x) => x ~/ gemSize;
   int getRow(double y) => y ~/ gemSize;
 
-  bool select(Gem gem) {
-    // assert(gem != null);
-    // if (gem != null) {
-    //   if (_selectedGems.isEmpty) {
-    //     gem._active = true;
-    //     _selectedGems.add(gem);
-    //     return true;
-    //   } else {
-    //     if (_selectedGems.last.type == gem.type && _selectedGems.last.isNeighbour(gem)) {
-    //       if (_selectedGems.length > 1) {
-    //         final lastButOne = _selectedGems[_selectedGems.length - 1 - 1];
-    //         if (lastButOne._active && lastButOne == gem) {
-    //           unselect(_selectedGems.last);
-    //           return false;
-    //         }
-    //       }
-    //       gem._active = true;
-    //       _selectedGems.add(gem);
-    //       return true;
-    //     }
-    //   }
-    // }
-    return false;
-  }
-
-  bool unselect(Gem gem) {
-    // assert(gem != null);
-    // if (gem != null) {
-    //   assert(_selectedGems.contains(gem));
-    //   if (gem._active && _selectedGems.contains(gem)) {
-    //     gem._active = false;
-    //     _selectedGems.remove(gem);
-    //     return true;
-    //   }
-    // }
-    return false;
+  void select(Gem gem) {
+    assert(gem != null);
+    if (gem != null) {
+      gem.select();
+      _selected.push(gem);
+    }
   }
 
   void onDragStart(double x, double y) {
     final double dx = x - this.x;
     final double dy = y - this.y;
     if (inside(dx, dy)) {
-      _currentColumn = getColumn(dx);
-      _currentRow = getRow(dy);
-      final Gem gem = _table.get(_currentColumn, _currentRow);
-      if (gem.isInside(dx, dy)) {
+      final int column = getColumn(dx);
+      final int row = getRow(dy);
+      final Gem gem = _table.get(column, row);
+      _current = gem;
+      if (gem != null && gem.isInside(dx, dy)) {
         select(gem);
       }
     }
@@ -116,14 +68,31 @@ class Board extends PositionComponent {
     final double dx = x - this.x;
     final double dy = y - this.y;
     if (inside(dx, dy)) {
-      final int newColumn = getColumn(dx);
-      final int newRow = getRow(dy);
-      final Gem gem = _table.get(newColumn, newRow);
-      if (gem.isInside(dx, dy)) {
-        if (_currentColumn != newColumn || _currentRow != newRow) {
-          if (select(gem)) {
-            _currentColumn = newColumn;
-            _currentRow = newRow;
+      final int column = getColumn(dx);
+      final int row = getRow(dy);
+      final Gem gem = _table.get(column, row);
+      _current = gem;
+      if (gem != null && gem.isInside(dx, dy)) {
+        if (gem.isSelected) {
+          if (_selected.length > 1) {
+            log('$_selected   ->   ${_selected.peekBeforeLast()}');
+            final Gem beforeLast = _selected.peekBeforeLast();
+            if (gem == beforeLast) {
+              final Gem poped = _selected.pop();
+              poped.unselect();
+            }
+          }
+        } else {
+          // gem not selected
+          if (_selected.any) {
+            // some other games are selected
+            final Gem lastGem = _selected.peek();
+            if (lastGem.type == gem.type && lastGem.isNeighbour(gem)) {
+              select(gem);
+            }
+          } else {
+            // no gems selected so far
+            select(gem);
           }
         }
       }
@@ -131,15 +100,33 @@ class Board extends PositionComponent {
   }
 
   void onDragEnd(double x, double y) {
-    _selectedGems.unselectAndClear();
-    _currentColumn = -1;
-    _currentRow = -1;
+    if (_selected.collectable) {
+      final Iterator<Gem> it = _selected.iterator;
+      while (it.moveNext()) {
+        it.current.unselect();
+        _table.remove(it.current);
+        removeChild(it.current);
+      }
+      // _table.collect(_selected);
+      _selected.clear();
+    } else {
+      _selected.unselectAndClear();
+    }
+    _current = null;
   }
 
   @override
   void render(Canvas c) {
     super.render(c);
     c.drawRect(size.toRect(), Paints.white);
+
+    final String current =
+        _current != null ? '${_current.type}[${_current.column},${_current.row}]' : 'none';
+    final Gem bl = _selected.peekBeforeLast();
+    final String beforeLast = bl != null ? '${bl.type}[${bl.column},${bl.row}]' : 'none';
+    renderText(c, beforeLast, offset: Offset(0, -66), color: Colors.white, size: 16);
+    renderText(c, current, offset: Offset(0, -44), color: Colors.white, size: 16);
+    renderText(c, _selected.toString(), offset: Offset(0, -22), color: Colors.white, size: 16);
   }
 
   @override
